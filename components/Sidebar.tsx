@@ -29,10 +29,11 @@ interface SidebarProps {
     email: string
     profilePicture?: string
   }
+  isOpen?: boolean
+  onClose?: () => void
 }
 
-export default function Sidebar({ userRole, onLogout, user }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+export default function Sidebar({ userRole, onLogout, user, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   const isAdmin = userRole === 'ADMIN' || userRole === 'LMS_ADMIN'
@@ -82,43 +83,40 @@ export default function Sidebar({ userRole, onLogout, user }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
-      {!isCollapsed && (
+      {/* Overlay */}
+      {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsCollapsed(true)}
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full bg-white shadow-lg z-50 transition-all duration-300 flex flex-col
-        ${isCollapsed ? 'w-16' : 'w-64'} lg:relative lg:translate-x-0
-        ${!isCollapsed ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        fixed top-0 left-0 h-full bg-white shadow-lg z-50 transition-all duration-300 flex flex-col w-64
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 relative">
-                <Image
-                  src="/logo.jpg"
-                  alt="HSSC Logo"
-                  fill
-                  className="object-cover rounded"
-                />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">HSSC</h1>
-                <p className="text-xs text-gray-500">SSO Gateway</p>
-              </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 relative">
+              <Image
+                src="/logo.jpg"
+                alt="HSSC Logo"
+                fill
+                className="object-cover rounded"
+              />
             </div>
-          )}
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">HSSC</h1>
+              <p className="text-xs text-gray-500">SSO Gateway</p>
+            </div>
+          </div>
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 lg:hidden"
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100"
           >
-            {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -139,9 +137,7 @@ export default function Sidebar({ userRole, onLogout, user }: SidebarProps) {
                 `}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {!isCollapsed && (
-                  <span className="font-medium">{item.title}</span>
-                )}
+                <span className="font-medium">{item.title}</span>
               </Link>
             )
           })}
@@ -157,14 +153,12 @@ export default function Sidebar({ userRole, onLogout, user }: SidebarProps) {
             className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors"
           >
             <ExternalLink className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && (
-              <span className="font-medium">LMS Access</span>
-            )}
+            <span className="font-medium">LMS Access</span>
           </button>
         </div>
 
         {/* User Profile Section */}
-        {user && !isCollapsed && (
+        {user && (
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-200">
@@ -193,9 +187,7 @@ export default function Sidebar({ userRole, onLogout, user }: SidebarProps) {
             className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && (
-              <span className="font-medium">Logout</span>
-            )}
+            <span className="font-medium">Logout</span>
           </button>
         </div>
       </div>

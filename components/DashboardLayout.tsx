@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import toast from 'react-hot-toast'
+import { Menu } from 'lucide-react'
 
 interface User {
   id: string
@@ -24,6 +25,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, user, loading }: DashboardLayoutProps) {
   const [isLMSLoading, setIsLMSLoading] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
     const handleLMSAccess = () => {
@@ -86,6 +88,10 @@ export default function DashboardLayout({ children, user, loading }: DashboardLa
     }
   }
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -112,14 +118,22 @@ export default function DashboardLayout({ children, user, loading }: DashboardLa
           email: user.email,
           profilePicture: user.profilePicture
         }}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">
         {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 lg:hidden">
+        <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-lg hover:bg-gray-100 mr-2"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
               <div className="w-8 h-8 relative">
                 <img
                   src="/logo.jpg"
