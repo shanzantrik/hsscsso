@@ -1,0 +1,68 @@
+// This is your Prisma schema file for SQLite development
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  fullName          String
+  email             String   @unique
+  mobileNumber      String
+  hsscId            String   @unique
+  password          String
+  role              String   // UserRole enum as string
+  instituteName     String
+  instituteCategory String   // InstituteCategory enum as string
+  pincode           String
+  gender            String?  // Gender enum as string
+  dateOfBirth       DateTime?
+  alternateEmail    String?
+  address           String?
+  profilePicture    String?
+  isActive          Boolean  @default(true)
+  emailVerified     Boolean  @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  loginLogs         LoginLog[]
+  refreshTokens     RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  userId      String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  isRevoked   Boolean  @default(false)
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  ipAddress String
+  userAgent String
+  success   Boolean
+  timestamp DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_logs")
+}
