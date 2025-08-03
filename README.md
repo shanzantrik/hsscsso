@@ -8,7 +8,11 @@ A secure, scalable Single Sign-On (SSO) authentication gateway for the Hydrocarb
 
 - **Secure Authentication**: JWT-based authentication with refresh tokens
 - **Role-Based Access Control**: Student, Teacher, Admin, and LMS Admin roles
-- **SSO Integration**: Seamless integration with LearnWorlds LMS
+- **LearnWorlds SSO Integration**:
+  - Custom SSO Gateway for login, signup, and password reset
+  - SAML 2.0 integration with metadata and ACS endpoints
+  - LearnWorlds API integration for seamless authentication
+  - Support for both Custom SSO and SAML protocols
 - **User Management**: Complete user registration and profile management
 - **Admin Dashboard**: Comprehensive admin panel with user analytics
 - **Security Features**: Password hashing, rate limiting, CSRF protection
@@ -70,13 +74,16 @@ A secure, scalable Single Sign-On (SSO) authentication gateway for the Hydrocarb
    NEXTAUTH_SECRET="your-nextauth-secret-key"
    NEXTAUTH_URL="http://localhost:3000"
 
-   # LMS Integration (LearnWorlds)
-   LMS_CLIENT_ID="your-lms-client-id"
-   LMS_CLIENT_SECRET="your-lms-client-secret"
-   LMS_REDIRECT_URI="http://localhost:3000/api/auth/callback/lms"
-   LMS_AUTH_URL="https://your-domain.learnworlds.com/oauth/authorize"
-   LMS_TOKEN_URL="https://your-domain.learnworlds.com/oauth/token"
-   LMS_USERINFO_URL="https://your-domain.learnworlds.com/oauth/userinfo"
+   # LearnWorlds LMS Integration
+   LMS_AUTH_URL="https://academy.dadb.com"
+   LMS_CLIENT_ID="your_learnworlds_client_id"
+   LMS_ACCESS_TOKEN="your_learnworlds_access_token"
+
+   # SAML Configuration
+   SAML_ENTITY_ID="https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/metadata"
+   SAML_ACS_URL="https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/saml2-acs"
+   SAML_SLO_URL="https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/saml2-sls"
+   SAML_CERTIFICATE="your_saml_certificate_here"
    ```
 
 4. **Set up the database**
@@ -100,6 +107,29 @@ A secure, scalable Single Sign-On (SSO) authentication gateway for the Hydrocarb
 
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🔐 SSO Testing
+
+### Custom SSO Gateway
+
+Test the SSO gateway with LearnWorlds integration:
+
+```bash
+# Test login flow
+http://localhost:3000/sso-learnworlds?action=login&redirectUrl=https://academy.dadb.com
+
+# Test password reset flow
+http://localhost:3000/sso-learnworlds?action=passwordreset&redirectUrl=https://academy.dadb.com
+```
+
+### SAML Integration
+
+Access SAML metadata for IDP configuration:
+
+```bash
+# SAML Metadata
+http://localhost:3000/api/saml/metadata
+```
 
 ## 🏗️ Project Structure
 
@@ -135,30 +165,56 @@ hssc-sso-gateway/
 
 ## 🔗 SSO Integration
 
-The application integrates with LearnWorlds LMS using OAuth 2.0 and OpenID Connect:
+The application integrates with LearnWorlds LMS using both Custom SSO and SAML 2.0 protocols:
 
-### SSO Flow
+### Custom SSO Flow
 
-1. User authenticates through HSSC gateway
-2. Gateway generates SSO token with user attributes
-3. User redirected to LMS with SSO token
-4. LMS validates token and creates user session
+1. LearnWorlds redirects user to SSO gateway with `action` and `redirectUrl` parameters
+2. User authenticates through HSSC gateway (login/signup/password reset)
+3. Gateway calls LearnWorlds SSO API with user credentials
+4. LearnWorlds returns authentication URL
+5. User redirected to LearnWorlds with active session
 
-### Required LMS Configuration
+### SAML 2.0 Flow
 
-- OAuth 2.0 Authorization Code Flow
-- OpenID Connect support
-- JWT-based token exchange
-- Token validation endpoint
+1. User initiates SAML authentication from LearnWorlds
+2. LearnWorlds sends SAML request to HSSC gateway
+3. Gateway validates SAML request and authenticates user
+4. Gateway sends SAML response back to LearnWorlds
+5. User logged into LearnWorlds with SSO session
+
+### LearnWorlds API Integration
+
+The system uses the LearnWorlds SSO API for seamless integration:
+
+```typescript
+POST https://{SCHOOLHOMEPAGE}/admin/api/sso
+Headers:
+  Lw-Client: your_client_id
+  Authorization: Bearer application_access_token
+Body:
+  {
+    "email": "user@example.com",
+    "username": "User Name",
+    "redirectUrl": "https://learnworlds.com",
+    "user_id": "optional_user_id"
+  }
+```
+
+### SAML Configuration
+
+Based on the provided SAML endpoints:
+
+- **Service Provider (SP) URL**: `https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/metadata`
+- **Assertion Consumer Service (ACS) URL**: `https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/saml2-acs`
+- **Single Logout URL**: `https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/saml2-sls`
 
 ### User Attribute Mapping
 
-- `user_id`: Unique user identifier
-- `email`: User email address
-- `name`: Full name
+- `email`: User email address (unique identifier)
+- `username`: User display name
+- `user_id`: LearnWorlds user ID (for existing users)
 - `role`: User role (student/teacher/admin)
-- `hssc_id`: HSSC identifier
-- `institute`: Institute name
 - `institute_category`: Institute category
 
 ## 👥 User Management

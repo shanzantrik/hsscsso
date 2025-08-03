@@ -47,10 +47,10 @@ export default function Sidebar({ userRole, onLogout, user, isOpen = false, onCl
     },
     ...(isAdmin ? [
       {
-        title: 'User Management',
-        href: '/admin/users',
+        title: 'Directory Management',
+        href: '/admin/directory',
         icon: Users,
-        active: pathname === '/admin/users'
+        active: pathname === '/admin/directory'
       },
       {
         title: 'Activity Logs',
@@ -143,19 +143,7 @@ export default function Sidebar({ userRole, onLogout, user, isOpen = false, onCl
           })}
         </nav>
 
-        {/* LMS Access Button */}
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={() => {
-              // This will be handled by the parent component
-              window.dispatchEvent(new CustomEvent('lms-access'))
-            }}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors"
-          >
-            <ExternalLink className="w-5 h-5 flex-shrink-0" />
-            <span className="font-medium">LMS Access</span>
-          </button>
-        </div>
+
 
         {/* User Profile Section */}
         {user && (

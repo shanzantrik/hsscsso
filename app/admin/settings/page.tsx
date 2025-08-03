@@ -31,39 +31,8 @@ interface EnvironmentConfig {
   updatedAt: string
 }
 
-interface SystemConfig {
-  siteName: string
-  siteDescription: string
-  maintenanceMode: boolean
-  debugMode: boolean
-  maxLoginAttempts: number
-  sessionTimeout: number
-  passwordPolicy: {
-    minLength: number
-    requireUppercase: boolean
-    requireLowercase: boolean
-    requireNumbers: boolean
-    requireSpecialChars: boolean
-  }
-}
-
 export default function SystemSettingsPage() {
   const [configs, setConfigs] = useState<EnvironmentConfig[]>([])
-  const [systemConfig, setSystemConfig] = useState<SystemConfig>({
-    siteName: 'HSSC SSO Gateway',
-    siteDescription: 'Secure Single Sign-On authentication gateway for Hydrocarbon Sector Skill Council',
-    maintenanceMode: false,
-    debugMode: false,
-    maxLoginAttempts: 5,
-    sessionTimeout: 3600,
-    passwordPolicy: {
-      minLength: 8,
-      requireUppercase: true,
-      requireLowercase: true,
-      requireNumbers: true,
-      requireSpecialChars: true,
-    }
-  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
@@ -81,7 +50,7 @@ export default function SystemSettingsPage() {
     try {
       const token = localStorage.getItem('accessToken')
       if (!token) {
-        window.location.href = '/'
+        window.location.href = '/admin/login'
         return
       }
 
@@ -100,16 +69,14 @@ export default function SystemSettingsPage() {
 
         setCurrentUser(data.user)
         fetchConfigs()
-        fetchSystemConfig()
       } else {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        window.location.href = '/'
+        window.location.href = '/admin/login'
       }
     } catch (error) {
       console.error('Auth check error:', error)
-      toast.error('Authentication failed')
-      window.location.href = '/'
+      window.location.href = '/admin/login'
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -123,32 +90,14 @@ export default function SystemSettingsPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        setConfigs(data.configs)
+        setConfigs(data.configs || [])
       } else {
-        // Use mock data if endpoint doesn't exist
+        // Use mock data if API fails
         setMockConfigs()
       }
     } catch (error) {
+      console.error('Error fetching configs:', error)
       setMockConfigs()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchSystemConfig = async () => {
-    try {
-      const token = localStorage.getItem('accessToken')
-      const response = await fetch('/api/admin/settings/system', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setSystemConfig(data.config)
-      }
-    } catch (error) {
-      // Use default system config
     }
   }
 
@@ -176,9 +125,9 @@ export default function SystemSettingsPage() {
       },
       {
         id: '3',
-        key: 'LMS_API_URL',
-        value: 'https://api.learnworlds.com/v1',
-        description: 'LearnWorlds LMS API endpoint',
+        key: 'LMS_AUTH_URL',
+        value: 'https://academy.dadb.com',
+        description: 'LearnWorlds LMS authentication URL',
         category: 'LMS',
         isEncrypted: false,
         isRequired: true,
@@ -186,9 +135,9 @@ export default function SystemSettingsPage() {
       },
       {
         id: '4',
-        key: 'LMS_API_KEY',
-        value: 'lw_api_key_123456789',
-        description: 'LearnWorlds API authentication key',
+        key: 'LMS_CLIENT_ID',
+        value: 'your_learnworlds_client_id',
+        description: 'LearnWorlds client ID for SSO',
         category: 'LMS',
         isEncrypted: true,
         isRequired: true,
@@ -196,6 +145,56 @@ export default function SystemSettingsPage() {
       },
       {
         id: '5',
+        key: 'LMS_ACCESS_TOKEN',
+        value: 'your_learnworlds_access_token',
+        description: 'LearnWorlds access token for API calls',
+        category: 'LMS',
+        isEncrypted: true,
+        isRequired: true,
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '6',
+        key: 'SAML_ENTITY_ID',
+        value: 'https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/metadata',
+        description: 'SAML Entity ID for SSO integration',
+        category: 'LMS',
+        isEncrypted: false,
+        isRequired: true,
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '7',
+        key: 'SAML_ACS_URL',
+        value: 'https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/saml2-acs',
+        description: 'SAML Assertion Consumer Service URL',
+        category: 'LMS',
+        isEncrypted: false,
+        isRequired: true,
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '8',
+        key: 'SAML_SLO_URL',
+        value: 'https://academy.dadb.com/admin/api/saml/624af5b2368c2b02724afe80/175345527775879/sp/saml2-sls',
+        description: 'SAML Single Logout Service URL',
+        category: 'LMS',
+        isEncrypted: false,
+        isRequired: true,
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '9',
+        key: 'SAML_CERTIFICATE',
+        value: 'your_saml_certificate_here',
+        description: 'SAML certificate for signing/encryption',
+        category: 'LMS',
+        isEncrypted: true,
+        isRequired: false,
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: '10',
         key: 'SMTP_HOST',
         value: 'smtp.gmail.com',
         description: 'SMTP server host for email notifications',
@@ -205,7 +204,7 @@ export default function SystemSettingsPage() {
         updatedAt: new Date().toISOString(),
       },
       {
-        id: '6',
+        id: '11',
         key: 'SMTP_PORT',
         value: '587',
         description: 'SMTP server port',
@@ -215,7 +214,7 @@ export default function SystemSettingsPage() {
         updatedAt: new Date().toISOString(),
       },
       {
-        id: '7',
+        id: '12',
         key: 'SMTP_USER',
         value: 'noreply@hssc.com',
         description: 'SMTP username for authentication',
@@ -225,7 +224,7 @@ export default function SystemSettingsPage() {
         updatedAt: new Date().toISOString(),
       },
       {
-        id: '8',
+        id: '13',
         key: 'SMTP_PASS',
         value: 'email_password_123',
         description: 'SMTP password for authentication',
@@ -235,7 +234,7 @@ export default function SystemSettingsPage() {
         updatedAt: new Date().toISOString(),
       },
       {
-        id: '9',
+        id: '14',
         key: 'REDIS_URL',
         value: 'redis://localhost:6379',
         description: 'Redis connection URL for caching',
@@ -245,7 +244,7 @@ export default function SystemSettingsPage() {
         updatedAt: new Date().toISOString(),
       },
       {
-        id: '10',
+        id: '15',
         key: 'NEXTAUTH_SECRET',
         value: 'nextauth-secret-key-123',
         description: 'NextAuth.js secret key',
@@ -264,6 +263,7 @@ export default function SystemSettingsPage() {
   }
 
   const handleSaveConfig = async (configId: string) => {
+    setSaving(true)
     try {
       const token = localStorage.getItem('accessToken')
       const response = await fetch('/api/admin/settings/configs', {
@@ -284,53 +284,23 @@ export default function SystemSettingsPage() {
             ? { ...config, value: editValue, updatedAt: new Date().toISOString() }
             : config
         ))
-        setEditingConfig(null)
-        setEditValue('')
-        toast.success('Configuration updated successfully')
+        toast.success('Configuration updated successfully!')
       } else {
         toast.error('Failed to update configuration')
       }
     } catch (error) {
-      // Update locally for demo
-      setConfigs(prev => prev.map(config =>
-        config.id === configId
-          ? { ...config, value: editValue, updatedAt: new Date().toISOString() }
-          : config
-      ))
+      console.error('Error updating config:', error)
+      toast.error('Failed to update configuration')
+    } finally {
+      setSaving(false)
       setEditingConfig(null)
       setEditValue('')
-      toast.success('Configuration updated successfully')
     }
   }
 
   const handleCancelEdit = () => {
     setEditingConfig(null)
     setEditValue('')
-  }
-
-  const handleSaveSystemConfig = async () => {
-    setSaving(true)
-    try {
-      const token = localStorage.getItem('accessToken')
-      const response = await fetch('/api/admin/settings/system', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(systemConfig),
-      })
-
-      if (response.ok) {
-        toast.success('System settings saved successfully')
-      } else {
-        toast.error('Failed to save system settings')
-      }
-    } catch (error) {
-      toast.success('System settings saved successfully')
-    } finally {
-      setSaving(false)
-    }
   }
 
   const togglePasswordVisibility = (configId: string) => {
@@ -403,230 +373,97 @@ export default function SystemSettingsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">System Settings</h1>
-          <p className="text-gray-600">Manage system configuration and environment variables</p>
+          <p className="text-gray-600">Manage environment configuration and system variables</p>
         </div>
 
-        {/* System Configuration */}
-        <div className="card mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">General Settings</h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Site Name
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={systemConfig.siteName}
-                  onChange={(e) => setSystemConfig(prev => ({ ...prev, siteName: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Site Description
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={systemConfig.siteDescription}
-                  onChange={(e) => setSystemConfig(prev => ({ ...prev, siteDescription: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Login Attempts
-                </label>
-                <input
-                  type="number"
-                  className="input-field"
-                  value={systemConfig.maxLoginAttempts}
-                  onChange={(e) => setSystemConfig(prev => ({ ...prev, maxLoginAttempts: parseInt(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Session Timeout (seconds)
-                </label>
-                <input
-                  type="number"
-                  className="input-field"
-                  value={systemConfig.sessionTimeout}
-                  onChange={(e) => setSystemConfig(prev => ({ ...prev, sessionTimeout: parseInt(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Password Length
-                </label>
-                <input
-                  type="number"
-                  className="input-field"
-                  value={systemConfig.passwordPolicy.minLength}
-                  onChange={(e) => setSystemConfig(prev => ({
-                    ...prev,
-                    passwordPolicy: { ...prev.passwordPolicy, minLength: parseInt(e.target.value) }
-                  }))}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-6">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={systemConfig.maintenanceMode}
-                  onChange={(e) => setSystemConfig(prev => ({ ...prev, maintenanceMode: e.target.checked }))}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                />
-                <span className="ml-2 text-sm text-gray-700">Maintenance Mode</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={systemConfig.debugMode}
-                  onChange={(e) => setSystemConfig(prev => ({ ...prev, debugMode: e.target.checked }))}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                />
-                <span className="ml-2 text-sm text-gray-700">Debug Mode</span>
-              </label>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveSystemConfig}
-                disabled={saving}
-                className="btn-primary flex items-center"
-              >
-                {saving ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                {saving ? 'Saving...' : 'Save Settings'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Environment Variables */}
-        <div className="card">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Environment Variables</h2>
-            <p className="text-sm text-gray-500 mt-1">Manage system environment configuration</p>
-          </div>
-          <div className="p-6">
-            {Object.entries(groupedConfigs).map(([category, configs]) => (
-              <div key={category} className="mb-8">
-                <div className="flex items-center mb-4">
+        {/* Environment Configuration */}
+        <div className="space-y-6">
+          {Object.entries(groupedConfigs).map(([category, configs]) => (
+            <div key={category} className="card">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center">
                   {getCategoryIcon(category)}
-                  <h3 className="text-md font-medium text-gray-900 ml-2">{category}</h3>
+                  <h2 className="text-lg font-medium text-gray-900 ml-2">{category} Configuration</h2>
                 </div>
+              </div>
+              <div className="p-6">
                 <div className="space-y-4">
                   {configs.map((config) => (
                     <div key={config.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="text-sm font-medium text-gray-900">{config.key}</span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(config.category)}`}>
-                              {config.category}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-900">{config.key}</span>
+                          {config.isRequired && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Required
                             </span>
-                            {config.isRequired && (
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                Required
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-500 mb-3">{config.description}</p>
-
+                          )}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(config.category)}`}>
+                            {config.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {config.isEncrypted && (
+                            <button
+                              onClick={() => togglePasswordVisibility(config.id)}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              {showPasswords[config.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          )}
                           {editingConfig === config.id ? (
-                            <div className="space-y-3">
-                              <div className="relative">
-                                <input
-                                  type={config.isEncrypted && !showPasswords[config.id] ? 'password' : 'text'}
-                                  className="input-field pr-10"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                />
-                                {config.isEncrypted && (
-                                  <button
-                                    type="button"
-                                    onClick={() => togglePasswordVisibility(config.id)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                  >
-                                    {showPasswords[config.id] ? (
-                                      <EyeOff className="w-4 h-4" />
-                                    ) : (
-                                      <Eye className="w-4 h-4" />
-                                    )}
-                                  </button>
-                                )}
-                              </div>
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleSaveConfig(config.id)}
-                                  className="btn-primary text-sm"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={handleCancelEdit}
-                                  className="btn-secondary text-sm"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="relative">
-                                  <input
-                                    type={config.isEncrypted && !showPasswords[config.id] ? 'password' : 'text'}
-                                    className="input-field pr-10 bg-gray-50"
-                                    value={config.value}
-                                    readOnly
-                                  />
-                                  {config.isEncrypted && (
-                                    <button
-                                      type="button"
-                                      onClick={() => togglePasswordVisibility(config.id)}
-                                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    >
-                                      {showPasswords[config.id] ? (
-                                        <EyeOff className="w-4 h-4" />
-                                      ) : (
-                                        <Eye className="w-4 h-4" />
-                                      )}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
+                            <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => handleEditConfig(config)}
-                                className="ml-3 btn-secondary text-sm"
+                                onClick={() => handleSaveConfig(config.id)}
+                                disabled={saving}
+                                className="text-green-600 hover:text-green-700"
                               >
-                                Edit
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <AlertTriangle className="w-4 h-4" />
                               </button>
                             </div>
+                          ) : (
+                            <button
+                              onClick={() => handleEditConfig(config)}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
                           )}
                         </div>
                       </div>
-                      <div className="mt-3 text-xs text-gray-400">
-                        Last updated: {new Date(config.updatedAt).toLocaleString()}
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{config.description}</p>
+                      {editingConfig === config.id ? (
+                        <div className="space-y-2">
+                          <input
+                            type={config.isEncrypted && !showPasswords[config.id] ? 'password' : 'text'}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder={`Enter ${config.key} value`}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                            {config.isEncrypted && !showPasswords[config.id] ? '••••••••' : config.value}
+                          </code>
+                          <span className="text-xs text-gray-500">
+                            Updated: {new Date(config.updatedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </DashboardLayout>

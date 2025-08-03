@@ -25,12 +25,14 @@ model User {
   dateOfBirth       DateTime?
   alternateEmail    String?
   address           String?
-  profilePicture    String?
-  isActive          Boolean  @default(true)
-  emailVerified     Boolean  @default(false)
-  lastLoginAt       DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+           profilePicture    String?
+         resetToken        String?
+         resetTokenExpiry  DateTime?
+         isActive          Boolean  @default(true)
+         emailVerified     Boolean  @default(false)
+         lastLoginAt       DateTime?
+         createdAt         DateTime @default(now())
+         updatedAt         DateTime @updatedAt
 
   // Relations
   loginLogs         LoginLog[]
