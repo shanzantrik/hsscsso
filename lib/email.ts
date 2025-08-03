@@ -47,7 +47,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       console.error('Email sending failed:', error)
       return false
     }
-    
+
   } catch (error) {
     console.error('Email sending error:', error)
     return false
@@ -107,36 +107,36 @@ export async function sendWelcomeEmail(email: string, name: string, password: st
       </div>
 
       <div style="background-color: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-        <p>© 2025 HSSC SSO Gateway. All rights reserved.</p>
+        <p>&copy; 2025 HSSC SSO Gateway. All rights reserved.</p>
       </div>
     </div>
   `
 
   const textContent = `
     Welcome to HSSC SSO Gateway!
-    
+
     Hello ${name},
-    
+
     Your account has been successfully created in the HSSC SSO Gateway system.
     You can now access the Learning Management System (LMS) using your credentials below.
-    
+
     Your Login Credentials:
     Email: ${email}
     Password: ${password}
-    
+
     Please keep these credentials secure and do not share them with anyone.
-    
+
     Access Learning Portal: ${loginUrl}
-    
+
     Important Information:
     - Your account is now active and ready to use
     - You can access the LMS through the SSO Gateway
     - If you forget your password, use the "Forgot Password" option
     - For technical support, contact your system administrator
-    
+
     This is an automated message. Please do not reply to this email.
-    
-    © 2025 HSSC SSO Gateway. All rights reserved.
+
+    &copy; 2025 HSSC SSO Gateway. All rights reserved.
   `
 
   return await sendEmail({
@@ -192,30 +192,30 @@ export async function sendPasswordResetEmail(email: string, name: string, resetU
       </div>
 
       <div style="background-color: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-        <p>© 2025 HSSC SSO Gateway. All rights reserved.</p>
+        <p>&copy; 2025 HSSC SSO Gateway. All rights reserved.</p>
       </div>
     </div>
   `
 
-  const textContent = `
+    const textContent = `
     Password Reset Request - HSSC SSO Gateway
-    
+
     Hello ${name},
-    
+
     We received a request to reset your password for your HSSC SSO Gateway account.
     If you didn't make this request, you can safely ignore this email.
-    
+
     Reset Your Password: ${resetUrl}
-    
+
     Important Information:
     - This link will expire in 1 hour for security reasons
     - If the link doesn't work, copy and paste it into your browser
     - For security, this link can only be used once
     - If you didn't request this reset, please contact support immediately
-    
+
     This is an automated message. Please do not reply to this email.
-    
-    © 2025 HSSC SSO Gateway. All rights reserved.
+
+    &copy; 2025 HSSC SSO Gateway. All rights reserved.
   `
 
   return await sendEmail({
@@ -225,4 +225,4 @@ export async function sendPasswordResetEmail(email: string, name: string, resetU
     htmlContent: htmlContent,
     textContent: textContent
   })
-} 
+}

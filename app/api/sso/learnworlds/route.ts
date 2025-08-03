@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAccessToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,10 +10,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No token provided' }, { status: 401 })
     }
 
-    const user = await verifyAccessToken(token)
+    const jwtPayload = await verifyAccessToken(token)
+
+    if (!jwtPayload) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // Fetch user data from database
+    const user = await prisma.user.findUnique({
+      where: { id: jwtPayload.userId }
+    })
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const body = await request.json()
@@ -21,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Call LearnWorlds SSO API
     const ssoResponse = await callLearnWorldsSSO({
       email: email || user.email,
-      username: username || user.fullName || user.username,
+      username: username || user.fullName,
       redirectUrl,
       user_id: user_id || user.id
     })

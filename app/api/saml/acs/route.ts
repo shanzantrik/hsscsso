@@ -39,9 +39,12 @@ export async function POST(request: NextRequest) {
         data: {
           email: userInfo.email,
           fullName: userInfo.name || userInfo.email.split('@')[0],
-          username: userInfo.email.split('@')[0],
+          mobileNumber: '', // Required field
+          hsscId: `SAML_${Date.now()}`, // Generate unique HSSC ID
           role: 'STUDENT',
+          instituteName: 'SAML User', // Required field
           instituteCategory: 'OTHER',
+          pincode: '', // Required field
           password: '', // SAML users don't need passwords
           isActive: true
         }
