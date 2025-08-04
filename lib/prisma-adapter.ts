@@ -14,7 +14,14 @@ export const customPrismaAdapter = {
 
     if (existingUser) {
       console.log('User already exists:', existingUser.id)
-      return existingUser
+      // Return only the fields that NextAuth expects (AdapterUser interface)
+      return {
+        id: existingUser.id,
+        email: existingUser.email,
+        name: existingUser.fullName,
+        image: existingUser.profilePicture,
+        emailVerified: existingUser.emailVerified ? new Date() : null,
+      }
     }
 
     // Generate required fields for new users
@@ -29,7 +36,7 @@ export const customPrismaAdapter = {
       instituteCategory: 'OTHER', // Default category
       pincode: '000000', // Default pincode
       isActive: true,
-      emailVerified: true,
+      emailVerified: new Date(), // NextAuth expects a Date object
     }
 
     console.log('Creating user with data:', userData)
@@ -39,7 +46,15 @@ export const customPrismaAdapter = {
         data: userData,
       })
       console.log('User created successfully:', user.id)
-      return user
+
+      // Return only the fields that NextAuth expects (AdapterUser interface)
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.fullName,
+        image: user.profilePicture,
+        emailVerified: user.emailVerified ? new Date() : null,
+      }
     } catch (error) {
       console.error('Error creating user:', error)
       throw error

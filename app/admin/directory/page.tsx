@@ -287,7 +287,17 @@ export default function DirectoryManagementPage() {
   }
 
       return (
-      <DashboardLayout user={session?.user} loading={loading}>
+      <DashboardLayout user={session?.user ? {
+        id: session.user.id || '',
+        fullName: session.user.name || session.user.email || '',
+        email: session.user.email || '',
+        role: session.user.role || 'STUDENT',
+        instituteName: 'Default Institute',
+        instituteCategory: 'OTHER',
+        hsscId: 'ADMIN_001',
+        lastLoginAt: null,
+        profilePicture: session.user.image || undefined
+      } : null} loading={loading}>
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
