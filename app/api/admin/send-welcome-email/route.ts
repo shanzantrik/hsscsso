@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken } from '@/lib/auth'
+import { getToken } from 'next-auth/jwt'
+import { PrismaClient } from '@prisma/client'
 import { sendWelcomeEmail } from '@/lib/email'
+
+const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Verify admin authentication using NextAuth
+    const token = await getToken({ req: request })
+    
+    if (!token || !token.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
-    const decoded = verifyAccessToken(token)
-
     // Check if user is admin
-    if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'LMS_ADMIN')) {
+    const user = await prisma.user.findUnique({
+      where: { id: token.id as string }
+    })
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'LMS_ADMIN')) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 

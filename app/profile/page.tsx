@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import UserNavigation from '@/components/UserNavigation'
 import {
   User,
   Mail,
@@ -19,21 +22,17 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import DashboardLayout from '@/components/DashboardLayout'
 
 interface UserProfile {
   id: string
   fullName: string
   email: string
-  phone: string
+  mobileNumber: string
   role: string
   instituteName: string
   instituteCategory: string
   pincode: string
-  address: string
-  city: string
-  state: string
-  country: string
+  address?: string
   isActive: boolean
   createdAt: string
   lastLoginAt: string | null
@@ -41,22 +40,20 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
 
   // Form state for editing
   const [formData, setFormData] = useState({
     fullName: '',
-    phone: '',
+    mobileNumber: '',
     address: '',
-    city: '',
-    state: '',
-    country: '',
     pincode: ''
   })
 
@@ -68,61 +65,36 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
-    checkAuthAndFetchProfile()
-  }, [])
+    if (status === 'loading') return
 
-  const checkAuthAndFetchProfile = async () => {
-    try {
-      const token = localStorage.getItem('accessToken')
-      if (!token) {
-        window.location.href = '/'
-        return
-      }
-
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setCurrentUser(data.user)
-        fetchProfile()
-      } else {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        window.location.href = '/'
-      }
-    } catch (error) {
-      console.error('Auth check error:', error)
-      toast.error('Authentication failed')
-      window.location.href = '/'
+    if (!session) {
+      router.push('/login')
+      return
     }
-  }
+
+    fetchProfile()
+  }, [session, status, router])
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       const response = await fetch('/api/user/profile', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       })
+
       if (response.ok) {
         const data = await response.json()
         setProfile(data.user)
         setFormData({
           fullName: data.user.fullName || '',
-          phone: data.user.phone || '',
+          mobileNumber: data.user.mobileNumber || '',
           address: data.user.address || '',
-          city: data.user.city || '',
-          state: data.user.state || '',
-          country: data.user.country || '',
           pincode: data.user.pincode || ''
         })
       } else {
-        toast.error('Failed to fetch profile')
+        const errorData = await response.json()
+        toast.error(errorData.message || 'Failed to fetch profile')
       }
     } catch (error) {
       toast.error('Failed to fetch profile')
@@ -141,11 +113,8 @@ export default function ProfilePage() {
     if (profile) {
       setFormData({
         fullName: profile.fullName || '',
-        phone: profile.phone || '',
+        mobileNumber: profile.mobileNumber || '',
         address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        country: profile.country || '',
         pincode: profile.pincode || ''
       })
     }
@@ -154,12 +123,10 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const token = localStorage.getItem('accessToken')
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       })
@@ -193,12 +160,10 @@ export default function ProfilePage() {
 
     setSaving(true)
     try {
-      const token = localStorage.getItem('accessToken')
       const response = await fetch('/api/user/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
@@ -242,15 +207,11 @@ export default function ProfilePage() {
 
     setUploadingImage(true)
     try {
-      const token = localStorage.getItem('accessToken')
       const formData = new FormData()
       formData.append('profileImage', file)
 
       const response = await fetch('/api/user/upload-profile-image', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
       })
 
@@ -295,20 +256,25 @@ export default function ProfilePage() {
     }
   }
 
-  if (!currentUser) {
+  if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading profile...</p>
         </div>
       </div>
     )
   }
 
+  if (!session) {
+    return null
+  }
+
   return (
-    <DashboardLayout user={currentUser} loading={loading}>
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
+      <UserNavigation />
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">My Profile</h1>
@@ -319,7 +285,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Card */}
             <div className="lg:col-span-1">
-              <div className="card p-6">
+              <div className="bg-white rounded-lg shadow-lg p-6">
                 <div className="text-center">
                   {/* Profile Image */}
                   <div className="relative mx-auto mb-4">
@@ -395,14 +361,14 @@ export default function ProfilePage() {
             {/* Profile Details */}
             <div className="lg:col-span-2 space-y-6">
               {/* Personal Information */}
-              <div className="card">
+              <div className="bg-white rounded-lg shadow-lg">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
                     {!isEditing ? (
                       <button
                         onClick={handleEdit}
-                        className="btn-secondary flex items-center"
+                        className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
@@ -412,14 +378,14 @@ export default function ProfilePage() {
                         <button
                           onClick={handleSave}
                           disabled={saving}
-                          className="btn-primary flex items-center"
+                          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                         >
                           <Save className="w-4 h-4 mr-2" />
                           {saving ? 'Saving...' : 'Save'}
                         </button>
                         <button
                           onClick={handleCancel}
-                          className="btn-secondary flex items-center"
+                          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <X className="w-4 h-4 mr-2" />
                           Cancel
@@ -437,7 +403,7 @@ export default function ProfilePage() {
                       {isEditing ? (
                         <input
                           type="text"
-                          className="input-field"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           value={formData.fullName}
                           onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                         />
@@ -463,14 +429,14 @@ export default function ProfilePage() {
                       {isEditing ? (
                         <input
                           type="tel"
-                          className="input-field"
-                          value={formData.phone}
-                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={formData.mobileNumber}
+                          onChange={(e) => setFormData(prev => ({ ...prev, mobileNumber: e.target.value }))}
                         />
                       ) : (
                         <p className="text-gray-900 flex items-center">
                           <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                          {profile.phone || 'Not provided'}
+                          {profile.mobileNumber || 'Not provided'}
                         </p>
                       )}
                     </div>
@@ -482,7 +448,7 @@ export default function ProfilePage() {
                       {isEditing ? (
                         <input
                           type="text"
-                          className="input-field"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           value={formData.pincode}
                           onChange={(e) => setFormData(prev => ({ ...prev, pincode: e.target.value }))}
                         />
@@ -497,7 +463,7 @@ export default function ProfilePage() {
                       </label>
                       {isEditing ? (
                         <textarea
-                          className="input-field"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           rows={3}
                           value={formData.address}
                           onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
@@ -510,74 +476,40 @@ export default function ProfilePage() {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={formData.city}
-                          onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                        />
-                      ) : (
-                        <p className="text-gray-900">{profile.city || 'Not provided'}</p>
-                      )}
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        State
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={formData.state}
-                          onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                        />
-                      ) : (
-                        <p className="text-gray-900">{profile.state || 'Not provided'}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={formData.country}
-                          onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                        />
-                      ) : (
-                        <p className="text-gray-900">{profile.country || 'Not provided'}</p>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Change Password */}
-              <div className="card">
+              <div className="bg-white rounded-lg shadow-lg">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">Change Password</h3>
+                  {session?.user?.email && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {session.user.email.includes('@gmail.com') ?
+                        'Google OAuth users can set a new password below.' :
+                        'Enter your current password to set a new one.'
+                      }
+                    </p>
+                  )}
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Current Password
+                        {session?.user?.email?.includes('@gmail.com') && (
+                          <span className="text-xs text-gray-500 ml-1">(Optional for Google users)</span>
+                        )}
                       </label>
                       <div className="relative">
                         <input
                           type={showPassword ? 'text' : 'password'}
-                          className="input-field pr-10"
+                          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           value={passwordData.currentPassword}
                           onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                          placeholder={session?.user?.email?.includes('@gmail.com') ? "Leave empty for Google users" : "Enter current password"}
                         />
                         <button
                           type="button"
@@ -595,7 +527,7 @@ export default function ProfilePage() {
                       </label>
                       <input
                         type="password"
-                        className="input-field"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={passwordData.newPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                       />
@@ -607,7 +539,7 @@ export default function ProfilePage() {
                       </label>
                       <input
                         type="password"
-                        className="input-field"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={passwordData.confirmPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       />
@@ -616,8 +548,9 @@ export default function ProfilePage() {
                     <div className="flex items-end">
                       <button
                         onClick={handlePasswordChange}
-                        disabled={saving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-                        className="btn-primary"
+                        disabled={saving || !passwordData.newPassword || !passwordData.confirmPassword ||
+                          (!session?.user?.email?.includes('@gmail.com') && !passwordData.currentPassword)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                       >
                         {saving ? 'Changing...' : 'Change Password'}
                       </button>
@@ -627,7 +560,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Account Information */}
-              <div className="card">
+              <div className="bg-white rounded-lg shadow-lg">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">Account Information</h3>
                 </div>
@@ -660,6 +593,6 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   )
 }

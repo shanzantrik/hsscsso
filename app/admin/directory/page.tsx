@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
+import { useSession, signOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import {
   UserPlus,
   Users,
@@ -17,6 +19,7 @@ import {
   AtSign,
   Save,
   Send,
+  LogOut,
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -37,7 +40,8 @@ interface UserData {
 }
 
 export default function DirectoryManagementPage() {
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -65,51 +69,30 @@ export default function DirectoryManagementPage() {
   })
 
   useEffect(() => {
-    checkAuthAndFetchData()
-  }, [])
+    if (status === 'loading') return
+
+    if (!session) {
+      router.push('/admin/login')
+      return
+    }
+
+    // Check if user is admin
+    if (session.user?.role !== 'ADMIN' && session.user?.role !== 'LMS_ADMIN') {
+      router.push('/dashboard')
+      return
+    }
+
+    setLoading(false)
+    fetchUsers()
+  }, [session, status, router])
 
   const checkAuthAndFetchData = async () => {
-    try {
-      const token = localStorage.getItem('accessToken')
-      if (!token) {
-        window.location.href = '/admin/login'
-        return
-      }
-
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.user.role !== 'ADMIN' && data.user.role !== 'LMS_ADMIN') {
-          window.location.href = '/dashboard'
-          return
-        }
-
-        setCurrentUser(data.user)
-        // Fetch users for directory
-        fetchUsers()
-      } else {
-        window.location.href = '/admin/login'
-      }
-    } catch (error) {
-      console.error('Auth check error:', error)
-      window.location.href = '/admin/login'
-    } finally {
-      setLoading(false)
-    }
+    // This function is no longer needed with NextAuth
   }
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-      })
+      const response = await fetch('/api/admin/users')
 
       if (response.ok) {
         const data = await response.json()
@@ -157,7 +140,6 @@ export default function DirectoryManagementPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify(userData),
       })
@@ -203,19 +185,18 @@ export default function DirectoryManagementPage() {
 
   const sendWelcomeEmail = async (email: string, name: string, password: string) => {
     try {
-      const response = await fetch('/api/admin/send-welcome-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify({
-          email,
-          name,
-          password,
-          loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/sso-learnworlds?action=login`
-        }),
-      })
+              const response = await fetch('/api/admin/send-welcome-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            name,
+            password,
+            loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/sso-learnworlds?action=login`
+          }),
+        })
 
       if (response.ok) {
         toast.success('Welcome email sent successfully!')
@@ -246,9 +227,6 @@ export default function DirectoryManagementPage() {
 
       const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
       })
 
       console.log('Delete response status:', response.status)
@@ -277,7 +255,6 @@ export default function DirectoryManagementPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify(updatedUser),
       })
@@ -309,8 +286,8 @@ export default function DirectoryManagementPage() {
     )
   }
 
-  return (
-    <DashboardLayout user={currentUser} loading={loading}>
+      return (
+      <DashboardLayout user={session?.user} loading={loading}>
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -330,13 +307,23 @@ export default function DirectoryManagementPage() {
                   Create New User
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDirectory(!showDirectory)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-              >
-                {showDirectory ? 'Hide Directory' : 'Show Directory'}
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDirectory(!showDirectory)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  {showDirectory ? 'Hide Directory' : 'Show Directory'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: '/admin/login', redirect: true })}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center space-x-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
 
             {showDirectory && (

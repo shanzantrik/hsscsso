@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { verifyAccessToken } from '@/lib/auth'
+import { getToken } from 'next-auth/jwt'
 
 const prisma = new PrismaClient()
 
-// Verify JWT token and check admin role
-async function verifyAdminToken(request: NextRequest) {
+// Verify admin session using NextAuth
+async function verifyAdminSession(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = await getToken({ req: request })
+    
+    if (!token || !token.id) {
       return null
     }
 
-    const token = authHeader.substring(7)
-    const decoded = verifyAccessToken(token)
-
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
+      where: { id: token.id as string }
     })
 
     if (!user || !['ADMIN', 'LMS_ADMIN'].includes(user.role)) {
@@ -33,7 +31,7 @@ async function verifyAdminToken(request: NextRequest) {
 // GET - Fetch all users with pagination and filters
 export async function GET(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request)
+    const adminUser = await verifyAdminSession(request)
     if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -125,7 +123,7 @@ export async function GET(request: NextRequest) {
 // POST - Create new user
 export async function POST(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request)
+    const adminUser = await verifyAdminSession(request)
     if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -231,7 +229,7 @@ export async function POST(request: NextRequest) {
 // PUT - Update user
 export async function PUT(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request)
+    const adminUser = await verifyAdminSession(request)
     if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -348,7 +346,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Deactivate user (soft delete)
 export async function DELETE(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request)
+    const adminUser = await verifyAdminSession(request)
     if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

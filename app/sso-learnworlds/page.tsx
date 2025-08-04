@@ -3,194 +3,52 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from 'lucide-react'
-
-interface SSOFormData {
-  email: string
-  password: string
-  username?: string
-  confirmPassword?: string
-}
+import { ArrowLeft, GraduationCap } from 'lucide-react'
 
 export default function SSOGateway() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [action, setAction] = useState<'login' | 'passwordreset'>('login')
   const [redirectUrl, setRedirectUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState<SSOFormData>({
-    email: '',
-    password: '',
-    username: '',
-    confirmPassword: ''
-  })
 
-    useEffect(() => {
-    const actionParam = searchParams.get('action') as 'login' | 'passwordreset'
+  useEffect(() => {
     const redirectParam = searchParams.get('redirectUrl')
- 
-    if (actionParam) {
-      setAction(actionParam)
-    }
- 
     if (redirectParam) {
       setRedirectUrl(decodeURIComponent(redirectParam))
     }
   }, [searchParams])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const validateForm = () => {
-    if (!formData.email || !formData.password) {
-      toast.error('Please fill in all required fields')
-      return false
-    }
-
-    return true
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-
+  const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Store tokens
-        localStorage.setItem('accessToken', data.accessToken)
-        localStorage.setItem('refreshToken', data.refreshToken)
-
-        // Call LearnWorlds SSO API
-        await callLearnWorldsSSO(data.user, redirectUrl)
-      } else {
-        toast.error(data.message || 'Login failed')
-      }
+      // Redirect to main login page with Google OAuth
+      router.push('/login')
     } catch (error) {
-      console.error('Login error:', error)
-      toast.error('An error occurred during login')
+      console.error('Google sign-in error:', error)
+      toast.error('An error occurred during sign-in')
     } finally {
       setIsLoading(false)
     }
   }
 
-  
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.email) {
-      toast.error('Please enter your email address')
-      return
-    }
-
+  const handleDirectLMSRedirect = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-        }),
-      })
-
-      const data = await response.json()
-
+      // Try direct LMS redirect
+      const response = await fetch('/api/lms/redirect')
       if (response.ok) {
-        toast.success('Password reset email sent successfully')
-        // Redirect back to LearnWorlds
-        if (redirectUrl) {
-          window.location.href = redirectUrl
-        }
+        const data = await response.json()
+        window.location.href = data.redirectUrl
       } else {
-        toast.error(data.message || 'Password reset failed')
+        // Fallback to Google OAuth
+        router.push('/login')
       }
     } catch (error) {
-      console.error('Password reset error:', error)
-      toast.error('An error occurred during password reset')
+      console.error('LMS redirect error:', error)
+      // Fallback to Google OAuth
+      router.push('/login')
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const callLearnWorldsSSO = async (user: any, redirectUrl: string) => {
-    try {
-      const response = await fetch('/api/sso/learnworlds', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify({
-          email: user.email,
-          username: user.fullName || user.username,
-          redirectUrl: redirectUrl,
-          user_id: user.id,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.url) {
-        // Redirect to LearnWorlds with SSO
-        window.location.href = data.url
-      } else {
-        toast.error('SSO integration failed')
-        // Fallback redirect
-        if (redirectUrl) {
-          window.location.href = redirectUrl
-        }
-      }
-    } catch (error) {
-      console.error('SSO error:', error)
-      toast.error('SSO integration failed')
-      // Fallback redirect
-      if (redirectUrl) {
-        window.location.href = redirectUrl
-      }
-    }
-  }
-
-  const getPageTitle = () => {
-    switch (action) {
-      case 'login':
-        return 'Sign In to HSSC'
-      case 'passwordreset':
-        return 'Reset Password'
-      default:
-        return 'Authentication'
-    }
-  }
-
-  const getPageDescription = () => {
-    switch (action) {
-      case 'login':
-        return 'Sign in to access your learning portal'
-      case 'passwordreset':
-        return 'Enter your email to reset your password'
-      default:
-        return 'Authentication required'
     }
   }
 
@@ -207,119 +65,86 @@ export default function SSOGateway() {
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {getPageTitle()}
+            Access Learning Portal
           </h1>
           <p className="text-gray-600">
-            {getPageDescription()}
+            Sign in with your Google account to access the Learning Portal
           </p>
         </div>
 
-        {/* Form */}
+        {/* Main Content */}
         <div className="bg-white rounded-lg shadow-xl p-6">
-          <form onSubmit={action === 'login' ? handleLogin : handlePasswordReset}>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
+          <div className="text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <GraduationCap className="w-12 h-12 text-blue-600" />
             </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Welcome to HSSC Learning Portal
+            </h2>
+            <p className="text-sm text-gray-600">
+              Sign in with your Google account to continue
+            </p>
+          </div>
 
-            {action !== 'passwordreset' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-
-
+          {/* Google OAuth Button */}
+          <div className="space-y-4">
             <button
-              type="submit"
+              onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing...
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
+                  Signing in...
                 </div>
               ) : (
-                action === 'login' ? 'Sign In' : 'Send Reset Email'
+                <>
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Sign in with Google
+                </>
               )}
             </button>
-          </form>
 
-          {/* Action Links */}
-          <div className="mt-6 text-center">
-            {action === 'login' && (
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">
-                  <button
-                    onClick={() => {
-                      const url = new URL(window.location.href)
-                      url.searchParams.set('action', 'passwordreset')
-                      window.location.href = url.toString()
-                    }}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Forgot your password?
-                  </button>
-                </p>
-              </div>
-            )}
-
-            {action === 'passwordreset' && (
-              <p className="text-sm text-gray-600">
-                Remember your password?{' '}
-                <button
-                  onClick={() => {
-                    const url = new URL(window.location.href)
-                    url.searchParams.set('action', 'login')
-                    window.location.href = url.toString()
-                  }}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Sign in
-                </button>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">
+                New users will be automatically registered
               </p>
-            )}
+            </div>
+          </div>
+
+          {/* Direct LMS Access (for authenticated users) */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleDirectLMSRedirect}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center px-4 py-2 text-sm text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50"
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Continue to Learning Portal
+            </button>
           </div>
 
           {/* Back to LearnWorlds */}
           {redirectUrl && (
-            <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <button
                 onClick={() => window.location.href = redirectUrl}
                 className="w-full flex items-center justify-center text-sm text-gray-600 hover:text-gray-800 transition-colors"

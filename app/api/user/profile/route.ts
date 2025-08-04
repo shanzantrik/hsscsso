@@ -1,36 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken } from '@/lib/auth'
+import { getToken } from 'next-auth/jwt'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
+    // Get token using NextAuth JWT
+    const token = await getToken({ req: request })
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token || !token.id) {
       return NextResponse.json(
-        { message: 'Authorization header required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-
-    // Verify JWT token
-    let decoded
-    try {
-      decoded = verifyAccessToken(token)
-    } catch (error) {
-      return NextResponse.json(
-        { message: 'Invalid token' },
+        { message: 'Authentication required' },
         { status: 401 }
       )
     }
 
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: token.id as string },
       select: {
         id: true,
         fullName: true,
@@ -82,24 +70,12 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
+    // Get token using NextAuth JWT
+    const token = await getToken({ req: request })
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token || !token.id) {
       return NextResponse.json(
-        { message: 'Authorization header required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-
-    // Verify JWT token
-    let decoded
-    try {
-      decoded = verifyAccessToken(token)
-    } catch (error) {
-      return NextResponse.json(
-        { message: 'Invalid token' },
+        { message: 'Authentication required' },
         { status: 401 }
       )
     }
@@ -108,12 +84,13 @@ export async function PUT(request: NextRequest) {
 
     // Update user profile
     const user = await prisma.user.update({
-      where: { id: decoded.userId },
+      where: { id: token.id as string },
       data: {
         fullName: updateData.fullName,
         mobileNumber: updateData.mobileNumber,
-        alternateEmail: updateData.alternateEmail,
         address: updateData.address,
+        pincode: updateData.pincode,
+        alternateEmail: updateData.alternateEmail,
         gender: updateData.gender,
         dateOfBirth: updateData.dateOfBirth ? new Date(updateData.dateOfBirth) : null,
       },

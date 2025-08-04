@@ -1,25 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { verifyAccessToken } from '@/lib/auth'
+import { getToken } from 'next-auth/jwt'
 
 const prisma = new PrismaClient()
 
-// Helper function to verify admin authentication
+// Helper function to verify admin authentication using NextAuth
 async function verifyAdminAuth(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { error: 'Authorization header required', status: 401 }
-  }
-
-  const token = authHeader.substring(7)
-
   try {
-    const decoded = verifyAccessToken(token)
+    const token = await getToken({ req: request })
+
+    if (!token || !token.id) {
+      return { error: 'Unauthorized', status: 401 }
+    }
 
     // Check if user exists and is active
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: token.id as string },
       select: { id: true, role: true, isActive: true }
     })
 

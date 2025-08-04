@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import toast from 'react-hot-toast'
 import { Menu } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 interface User {
   id: string
@@ -75,15 +76,12 @@ export default function DashboardLayout({ children, user, loading }: DashboardLa
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: localStorage.getItem('refreshToken') }),
+      await signOut({ 
+        callbackUrl: '/login',
+        redirect: true 
       })
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-      window.location.href = '/'
     } catch (error) {
+      console.error('Logout error:', error)
       toast.error('Logout failed')
     }
   }

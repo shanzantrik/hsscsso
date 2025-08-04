@@ -12,12 +12,20 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "setup": "./scripts/quick-setup.sh",
-    "dev:setup": "./scripts/dev-setup.sh"
+    "dev:setup": "./scripts/dev-setup.sh",
+    "generate-secrets": "node scripts/generate-secrets.js",
+    "create-admin": "node scripts/create-admin.js",
+    "fix-admin": "node scripts/fix-admin.js",
+    "fix-admin-user": "node scripts/fix-admin-user.js",
+    "reset-admin": "node scripts/reset-admin-password.js",
+    "test-auth": "node scripts/test-auth-flow.js",
+    "test-oauth": "node scripts/test-oauth-flow.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.10.0",
     "@hookform/resolvers": "^3.3.2",
     "@prisma/client": "^5.7.1",
     "@types/node": "^20",
@@ -36,7 +44,7 @@
     "lucide-react": "^0.294.0",
     "multer": "^1.4.5-lts.1",
     "next": "14.0.4",
-    "next-auth": "^4.24.5",
+    "next-auth": "^4.24.11",
     "nodemailer": "^6.9.7",
     "postcss": "^8",
     "prisma": "^5.7.1",
