@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
               <img
                 src="/logo.jpg"
                 alt="HSSC Logo"
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-contain rounded-lg"
               />
             </div>
           </div>

@@ -136,7 +136,7 @@ export default function DashboardLayout({ children, user, loading }: DashboardLa
                 <img
                   src="/logo.jpg"
                   alt="HSSC Logo"
-                  className="w-full h-full object-cover rounded"
+                  className="w-full h-full object-contain rounded"
                 />
               </div>
               <div>

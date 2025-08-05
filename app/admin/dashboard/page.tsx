@@ -74,7 +74,7 @@ export default function AdminDashboardPage() {
               <img
                 src="/logo.jpg"
                 alt="HSSC Logo"
-                className="w-8 h-8 rounded-lg mr-3"
+                className="w-8 h-8 object-contain rounded-lg mr-3"
               />
               <h1 className="text-xl font-bold text-gray-900">HSSC Admin Portal</h1>
             </div>

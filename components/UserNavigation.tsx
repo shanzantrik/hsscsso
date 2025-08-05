@@ -39,7 +39,7 @@ export default function UserNavigation() {
               <img
                 src="/logo.jpg"
                 alt="HSSC Logo"
-                className="w-8 h-8 rounded-lg"
+                className="w-8 h-8 object-contain rounded-lg"
               />
               <span className="text-xl font-bold text-gray-900">HSSC</span>
             </Link>

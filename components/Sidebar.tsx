@@ -104,7 +104,7 @@ export default function Sidebar({ userRole, onLogout, user, isOpen = false, onCl
                 src="/logo.jpg"
                 alt="HSSC Logo"
                 fill
-                className="object-cover rounded"
+                className="object-contain rounded"
               />
             </div>
             <div>
