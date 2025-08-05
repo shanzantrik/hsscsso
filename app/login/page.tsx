@@ -15,7 +15,8 @@ export default function LoginPage() {
   useEffect(() => {
     const error = searchParams.get('error')
     if (error) {
-      setError('Authentication failed. Please try again.')
+      console.log('🔍 OAuth error detected:', error)
+      setError(`Authentication failed: ${error}`)
     }
   }, [searchParams])
 

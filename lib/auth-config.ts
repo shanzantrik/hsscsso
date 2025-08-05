@@ -1,7 +1,7 @@
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { prisma } from './prisma'
 import { customPrismaAdapter } from './prisma-adapter'
+import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
 
 export const authOptions = {
@@ -76,10 +76,11 @@ export const authOptions = {
         hasCredentials: !!credentials
       })
 
-      // Allow Google OAuth
+      // Allow Google OAuth for non-admin users
       if (account?.provider === 'google') {
         console.log('✅ Allowing Google OAuth sign in')
-        // Check if user already exists
+
+        // Check if user already exists and is admin
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
         })
@@ -118,14 +119,14 @@ export const authOptions = {
       return defaultUrl
     },
     async session({ session, token }: any) {
-      console.log('🔐 Session callback called with:', { 
-        hasSession: !!session, 
+      console.log('🔐 Session callback called with:', {
+        hasSession: !!session,
         hasToken: !!token,
         sessionUser: session?.user?.email,
         tokenId: token?.id,
         tokenRole: token?.role
       })
-      
+
       // Add user ID and role to session from token
       if (session.user && token) {
         session.user.id = token.id as string
@@ -135,14 +136,14 @@ export const authOptions = {
       return session
     },
     async jwt({ token, user }: any) {
-      console.log('🔐 JWT callback called with:', { 
-        hasUser: !!user, 
-        userId: user?.id, 
+      console.log('🔐 JWT callback called with:', {
+        hasUser: !!user,
+        userId: user?.id,
         userRole: user?.role,
         tokenId: token?.id,
         tokenRole: token?.role
       })
-      
+
       if (user) {
         token.id = user.id
         token.role = user.role || 'STUDENT'
